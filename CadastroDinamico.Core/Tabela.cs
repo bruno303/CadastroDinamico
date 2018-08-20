@@ -4,31 +4,33 @@ using CadastroDinamico.Utils;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace CadastroDinamico.Core
 {
     public class Tabela : ITabela
     {
-        public string Nome { get; set; }
-        public string Schema { get; set; }
-        public bool TemChavePrimaria { get; set; }
-        public bool TemChaveEstrangeira { get; set; }
-        public int QuantidadeCampos { get; set; }
-        public List<Coluna> Colunas { get; set; }
-        //public List<string> CamposCriptografados { get; set; }
-        public List<string> CamposNaoExibir { get; set; }
+        public string Nome { get; private set; }
+        public string Schema { get; private set; }
+        public bool TemChavePrimaria { get; private set; }
+        public bool TemChaveEstrangeira { get; private set; }
+        public int QuantidadeCampos { get; private set; }
+        public List<Coluna> Colunas { get; private set; }
+
+        private List<string> CamposNaoExibir;
 
         public Tabela(string tabela, string schema)
         {
             Nome = tabela;
             Schema = schema;
+            CamposNaoExibir = new List<string>();
         }
 
         public Tabela(string tabela)
         {
             Nome = tabela;
+            CamposNaoExibir = new List<string>();
         }
 
         public Task<string> CarregarAsync()
@@ -52,6 +54,8 @@ namespace CadastroDinamico.Core
             try
             {
                 Colunas = new List<Coluna>();
+                Configurador configurador = new Configurador();
+                Conexao conexao = new Conexao(configurador.RetornarConfiguracao());
 
                 string query = string.Format(
                     @"SELECT COL.COLUMN_NAME, COL.ORDINAL_POSITION, COL.COLUMN_DEFAULT,
@@ -59,7 +63,7 @@ namespace CadastroDinamico.Core
 	                  COL.NUMERIC_PRECISION, COL.NUMERIC_PRECISION_RADIX
                   FROM INFORMATION_SCHEMA.COLUMNS COL WITH(NOLOCK)
                   WHERE COL.TABLE_NAME = '{0}'", Nome);
-                dadosCampos = new Conexao(new Configurador().RetornarConfiguracao()).RetornarDados(query);
+                dadosCampos = conexao.RetornarDados(query);
                 if (dadosCampos.TemRegistros())
                 {
                     foreach (DataRow registro in dadosCampos.Rows)
@@ -93,6 +97,10 @@ namespace CadastroDinamico.Core
 
                         Colunas.Add(campo);
                     }
+
+                    QuantidadeCampos = Colunas.Count;
+                    TemChavePrimaria = (Colunas.Where(p => p.IsChavePrimaria == true).FirstOrDefault() != null);
+                    TemChaveEstrangeira = (Colunas.Where(p => p.IsChaveEstrangeira == true).FirstOrDefault() != null);
                 }
             }
             catch (Exception ex)

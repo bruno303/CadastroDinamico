@@ -26,9 +26,16 @@ namespace CadastroDinamico.Core
 
             try
             {
-                json = new Json<Configuracao>().ConverterParaJson(configuracao);
-                json = new Criptografia().Criptografar(json);
-                new Arquivo().EscreverEmArquivo(Path, json, false);
+                if (configuracao != null)
+                {
+                    json = new Json<Configuracao>().ConverterParaJson(configuracao);
+                    json = new Criptografia().Criptografar(json);
+                    new Arquivo().EscreverEmArquivo(Path, json, false);
+                }
+                else
+                {
+                    new Arquivo().EscreverEmArquivo(Path, string.Empty, false);
+                }
             }
             catch (Exception ex)
             {
@@ -36,6 +43,14 @@ namespace CadastroDinamico.Core
             }
 
             return retorno;
+        }
+
+        public System.Threading.Tasks.Task<string> AlterarConfiguracaoAsync(Configuracao configuracao)
+        {
+            return System.Threading.Tasks.Task.Run(() =>
+            {
+                return AlterarConfiguracao(configuracao);
+            });
         }
 
         public Configuracao RetornarConfiguracao()
@@ -57,6 +72,14 @@ namespace CadastroDinamico.Core
             }
 
             return configuracao;
+        }
+
+        public System.Threading.Tasks.Task<Configuracao> RetornarConfiguracaoAsync()
+        {
+            return System.Threading.Tasks.Task.Run(() =>
+            {
+                return RetornarConfiguracao();
+            });
         }
 
         public bool ConfiguracaoValida()

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -73,10 +72,10 @@ namespace CadastroDinamico.Aplicacao.Forms
                 //eTiposDados.timestamp.ToString()
             };
 
-            Carregar();
+            CarregarAsync();
         }
 
-        private async void Carregar()
+        private async void CarregarAsync()
         {
             tabela = new Tabela(NomeTabela);
             List<Panel> panels = new List<Panel>();
@@ -87,85 +86,120 @@ namespace CadastroDinamico.Aplicacao.Forms
             SuspendLayout();
             foreach (var coluna in tabela.Colunas)
             {
-                Panel panel = new Panel();
-                panel.Dock = DockStyle.Top;
-                panel.Location = new Point(0, 175);
-                panel.Name = "pnCampo_" + coluna.Nome;
-                panel.Size = new Size(733, 30);
+                Panel panel = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Location = new Point(0, 175),
+                    Name = "pnCampo_" + coluna.Nome,
+                    Size = new Size(733, 30),
+                    Tag = coluna.Nome
+                };
                 panel.SuspendLayout();
-                panel.Tag = coluna.Nome;
 
                 Control control = null;
-                if (TiposMaskedTextBox.Where(p => p.Equals(coluna.Tipo)).ToList().Count > 0)
+
+                if (!coluna.IsChaveEstrangeira)
                 {
-                    MaskedTextBox maskedTextBox = new MaskedTextBox();
-                    control = maskedTextBox;
-                    // 
-                    // MaskedTextBox
-                    // 
-                    maskedTextBox.Location = new Point(182, 10);
-                    maskedTextBox.Name = "txb" + coluna.Nome.ToLower();
-                    maskedTextBox.Size = new Size(278, 23);
-                    maskedTextBox.Tag = coluna.Posicao;
 
-                    if (coluna.Tipo.ToUpper().Equals("INT"))
+                    if (TiposMaskedTextBox.Where(p => p.Equals(coluna.Tipo)).ToList().Count > 0)
                     {
-                        maskedTextBox.Mask = "000000000000000";
-                        maskedTextBox.ValidatingType = typeof(int);
-                    }
-                    else if (coluna.Tipo.ToUpper().Equals("SMALLINT") ||
-                             coluna.Tipo.ToUpper().Equals("TINYINT"))
-                    {
-                        maskedTextBox.Mask = "0000000000";
-                        maskedTextBox.ValidatingType = typeof(short);
-                    }
-                    else if (coluna.Tipo.ToUpper().Equals("BIGINT"))
-                    {
-                        maskedTextBox.Mask = "00000000000000000000";
-                        maskedTextBox.ValidatingType = typeof(long);
-                    }
-                    else if (coluna.Tipo.ToUpper().Equals("DATETIME"))
-                    {
-                        maskedTextBox.Mask = "00/00/0000 90:00";
-                        maskedTextBox.ValidatingType = typeof(DateTime);
-                    }
-                    else if (coluna.Tipo.ToUpper().Equals("DATE"))
-                    {
-                        maskedTextBox.Mask = "00/00/0000";
-                        maskedTextBox.ValidatingType = typeof(DateTime);
-                    }
-                    else if (coluna.Tipo.ToUpper().Equals("TIME"))
-                    {
-                        maskedTextBox.Mask = "90:00";
-                        maskedTextBox.ValidatingType = typeof(DateTime);
-                    }
+                        MaskedTextBox maskedTextBox = new MaskedTextBox();
+                        control = maskedTextBox;
+                        // 
+                        // MaskedTextBox
+                        // 
+                        maskedTextBox.Location = new Point(182, 5);
+                        maskedTextBox.Name = "txb" + coluna.Nome.ToLower();
+                        maskedTextBox.Size = new Size(278, 23);
+                        maskedTextBox.Tag = coluna.Posicao;
 
-                    controles.Add(maskedTextBox);
-                    panel.Controls.Add(maskedTextBox);
+                        if (coluna.Tipo.ToUpper().Equals("INT"))
+                        {
+                            maskedTextBox.Mask = "000000000000000";
+                            maskedTextBox.ValidatingType = typeof(int);
+                        }
+                        else if (coluna.Tipo.ToUpper().Equals("SMALLINT") ||
+                                 coluna.Tipo.ToUpper().Equals("TINYINT"))
+                        {
+                            maskedTextBox.Mask = "0000000000";
+                            maskedTextBox.ValidatingType = typeof(short);
+                        }
+                        else if (coluna.Tipo.ToUpper().Equals("BIGINT"))
+                        {
+                            maskedTextBox.Mask = "00000000000000000000";
+                            maskedTextBox.ValidatingType = typeof(long);
+                        }
+                        else if (coluna.Tipo.ToUpper().Equals("DATETIME"))
+                        {
+                            maskedTextBox.Mask = "00/00/0000 90:00";
+                            maskedTextBox.ValidatingType = typeof(DateTime);
+                        }
+                        else if (coluna.Tipo.ToUpper().Equals("DATE"))
+                        {
+                            maskedTextBox.Mask = "00/00/0000";
+                            maskedTextBox.ValidatingType = typeof(DateTime);
+                        }
+                        else if (coluna.Tipo.ToUpper().Equals("TIME"))
+                        {
+                            maskedTextBox.Mask = "90:00";
+                            maskedTextBox.ValidatingType = typeof(DateTime);
+                        }
+
+                        controles.Add(maskedTextBox);
+                        panel.Controls.Add(maskedTextBox);
+                    }
+                    else if (TiposCheckBox.Where(p => p.Equals(coluna.Tipo)).ToList().Count > 0)
+                    {
+                        CheckBox checkBox = new CheckBox();
+                        control = checkBox;
+                        checkBox.Location = new Point(182, 5);
+                        checkBox.Name = "ckb" + coluna.Nome;
+                        checkBox.Size = new Size(14, 23);
+                        checkBox.Tag = coluna.Posicao;
+
+                        controles.Add(checkBox);
+                        panel.Controls.Add(checkBox);
+                    }
+                    else if (TiposDateTimePicker.Where(p => p.Equals(coluna.Tipo)).ToList().Count > 0)
+                    {
+                        DateTimePicker dateTimePicker = new DateTimePicker();
+                        control = dateTimePicker;
+                        dateTimePicker.Location = new Point(182, 5);
+                        dateTimePicker.Name = "dtp" + coluna.Nome;
+                        dateTimePicker.Size = new Size(278, 23);
+                        dateTimePicker.Tag = coluna.Posicao;
+
+                        controles.Add(dateTimePicker);
+                        panel.Controls.Add(dateTimePicker);
+                    }
                 }
-                else if (TiposCheckBox.Where(p => p.Equals(coluna.Tipo)).ToList().Count > 0)
+                else  // Coluna é chave estrangeira
                 {
-                    CheckBox checkBox = new CheckBox();
-                    control = checkBox;
-                    checkBox.Location = new Point(182, 10);
-                    checkBox.Name = "ckb" + coluna.Nome;
-                    checkBox.Size = new Size(14, 23);
-                    checkBox.Tag = coluna.Posicao;
+                    TextBox textBox = new TextBox();
+                    Button button = new Button();
 
-                    controles.Add(checkBox);
-                    panel.Controls.Add(checkBox);
-                }
-                else if (TiposDateTimePicker.Where(p => p.Equals(coluna.Tipo)).ToList().Count > 0)
-                {
-                    DateTimePicker dateTimePicker = new DateTimePicker();
-                    control = dateTimePicker;
-                    dateTimePicker.Location = new Point(182, 10);
-                    dateTimePicker.Name = "dtp" + coluna.Nome;
-                    dateTimePicker.Size = new Size(278, 23);
-                    dateTimePicker.Tag = coluna.Posicao;
+                    control = textBox;
+                    // 
+                    // TextBox
+                    // 
+                    textBox.Location = new Point(182, 5);
+                    textBox.Name = "txb" + coluna.Nome.ToLower();
+                    textBox.Size = new Size(278, 23);
+                    textBox.Tag = coluna.Posicao;
 
-                    controles.Add(dateTimePicker);
-                    panel.Controls.Add(dateTimePicker);
+                    //
+                    // Button
+                    //
+                    button.Location = new Point(470, 5);
+                    button.Size = new Size(25, 23);
+                    button.Text = "...";
+                    button.Name = "btn" + coluna.Nome.ToLower();
+                    button.UseVisualStyleBackColor = true;
+                    button.Tag = coluna.Nome;
+                    button.Click += new EventHandler(ConsultarTabelaEstrangeira);
+
+                    panel.Controls.Add(textBox);
+                    panel.Controls.Add(button);
                 }
 
                 //
@@ -188,7 +222,7 @@ namespace CadastroDinamico.Aplicacao.Forms
 
                 panel.Controls.Add(label);
                 panels.Add(panel);
-                panel.ResumeLayout();
+                panel.ResumeLayout(false);
                 this.panels.Add(panel);
             }
             panels.Reverse();
@@ -217,7 +251,12 @@ namespace CadastroDinamico.Aplicacao.Forms
             }
         }
 
-        private void dgvDados_DoubleClick(object sender, EventArgs e)
+        private void dgvDados_Click(object sender, EventArgs e)
+        {
+            PreencherCampos();
+        }
+
+        private void PreencherCampos()
         {
             if (dgvDados != null)
             {
@@ -292,7 +331,7 @@ namespace CadastroDinamico.Aplicacao.Forms
             dgvDados.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvDados.Size = new Size(733, 175);
             dgvDados.TabIndex = 1;
-            dgvDados.DoubleClick += new EventHandler(dgvDados_DoubleClick);
+            dgvDados.Click += new EventHandler(dgvDados_Click);
 
             ((ISupportInitialize)(dgvDados)).EndInit();
 
@@ -312,6 +351,17 @@ namespace CadastroDinamico.Aplicacao.Forms
             catch (Exception)
             {
                 return false;
+            }
+        }
+
+        public void ConsultarTabelaEstrangeira(object sender, EventArgs e)
+        {
+            if (sender is Button)
+            {
+                if ((sender as Button).Tag is string)
+                {
+                    MessageBox.Show((sender as Button).Tag.ToString());
+                }
             }
         }
     }
